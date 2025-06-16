@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tango Puzzle</title>
+  <title>Tango Puzzle - Click to Swap</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,6 +33,11 @@
       background-size: 360px 360px;
       border: 1px solid #ccc;
       cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .selected {
+      border: 2px solid red;
     }
 
     #new-btn {
@@ -60,7 +65,7 @@
     const timerEl = document.getElementById('timer');
     const newBtn = document.getElementById('new-btn');
 
-    let startTime, interval, currentSeed;
+    let startTime, interval, currentSeed, tileOrder = [], selectedTile = null;
 
     function startTimer() {
       startTime = Date.now();
@@ -128,18 +133,52 @@
       clearInterval(interval);
       timerEl.textContent = "00:00";
       puzzleEl.innerHTML = '';
+      selectedTile = null;
 
       const indices = Array.from({ length: TOTAL_TILES }, (_, i) => i);
-      const shuffled = shuffle(indices.slice(), seed);
+      tileOrder = shuffle(indices.slice(), seed);
 
-      shuffled.forEach(tileIndex => {
+      tileOrder.forEach((tileIndex, i) => {
         const div = document.createElement('div');
         div.className = 'tile';
         div.style.backgroundPosition = getTileStyles(tileIndex);
+        div.dataset.index = i;
+        div.dataset.tile = tileIndex;
+        div.addEventListener('click', onTileClick);
         puzzleEl.appendChild(div);
       });
 
       startTimer();
+    }
+
+    function onTileClick(e) {
+      const clicked = e.currentTarget;
+      if (!selectedTile) {
+        selectedTile = clicked;
+        selectedTile.classList.add('selected');
+      } else if (selectedTile === clicked) {
+        selectedTile.classList.remove('selected');
+        selectedTile = null;
+      } else {
+        const idx1 = parseInt(selectedTile.dataset.index);
+        const idx2 = parseInt(clicked.dataset.index);
+        [tileOrder[idx1], tileOrder[idx2]] = [tileOrder[idx2], tileOrder[idx1]];
+        renderPuzzleFromOrder();
+        selectedTile = null;
+      }
+    }
+
+    function renderPuzzleFromOrder() {
+      puzzleEl.innerHTML = '';
+      tileOrder.forEach((tileIndex, i) => {
+        const div = document.createElement('div');
+        div.className = 'tile';
+        div.style.backgroundPosition = getTileStyles(tileIndex);
+        div.dataset.index = i;
+        div.dataset.tile = tileIndex;
+        div.addEventListener('click', onTileClick);
+        puzzleEl.appendChild(div);
+      });
     }
 
     function loadNewPuzzle() {
